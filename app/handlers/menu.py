@@ -1,7 +1,8 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, BufferedInputFile
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, BufferedInputFile, \
+    InputMediaPhoto
 
 from app.callbacks.menu import MenuCallback
 from app.callbacks.models_samplers import ModelsSamplersCallback
@@ -19,6 +20,7 @@ router = Router()
 
 class ImageGen(StatesGroup):
     input_prompt = State()
+    generating_image = State()
     input_api_key = State()
 
 
@@ -72,11 +74,19 @@ async def send_image(message: Message, state: FSMContext):
     #     await message.answer(text="Введен некорректный prompt\n"
     #                               "Попробуйте ещё")
     #     return gen_image
-    file = BufferedInputFile(file=await get_image(message.from_user.id, message.text), filename="generated_image.png")
-    await message.answer_photo(
-        photo=file
-    )
-    await state.clear()
+    await message.answer(text="⏳Ожидайте ... ", reply_to_message_id=message.message_id)
+    await state.set_state(ImageGen.generating_image)
+    try:
+        file = BufferedInputFile(file=await get_image(message.from_user.id, message.text),
+                                 filename="generated_image.png")
+        await message.edit_text(text="✅")
+        await message.answer_photo(
+            photo=file
+        )
+        await state.clear()
+    except:
+        await message.answer(text="❌Упс... что-то пошло не так❌")
+        await state.clear()
 
 
 @router.callback_query(MenuCallback.filter(F.choice == "models"), AuthFilter())
@@ -94,6 +104,7 @@ async def change_model(callback: CallbackQuery, callback_data: ModelsSamplersCal
     sampler = (await model_repository.get_code(user_id, redis_session)).split("_")[1]
     await model_repository.delete_user(user_id, redis_session)
     await model_repository.set(user_id, f"{model}_{sampler}", redis_session)
+    await callback.message.delete()
     await callback.answer("Модель изменена!")
 
 
@@ -112,4 +123,5 @@ async def change_sampler(callback: CallbackQuery, callback_data: ModelsSamplersC
     model = (await model_repository.get_code(user_id, redis_session)).split("_")[0]
     await model_repository.delete_user(user_id, redis_session)
     await model_repository.set(user_id, f"{model}_{sampler}", redis_session)
+    await callback.message.delete()
     await callback.answer("Семплер изменен!")

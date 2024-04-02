@@ -6,7 +6,7 @@ version: "3"
 # Эти сервисы будут частью нашего приложения
 services:
 
-  tg_bot: # Имя сервиса
+  tg_bot_xl: # Имя сервиса
     build:
       # Контекст для сборки образа,
       # в данном случае, текущая директория
@@ -23,10 +23,8 @@ services:
     command: python run.py
     restart: always
 
-  redis:
+  redis_xl:
     image: 'bitnami/redis:6.2.13'
     restart: always
-    ports:
-      - "6379:6379"
     environment:
       - ALLOW_EMPTY_PASSWORD=yes

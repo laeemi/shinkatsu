@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from app.core.redis import redis_session
+from app.filters.auth_filter import AuthFilter
 from app.keyboards.menu import get_menu_kb
 from app.services.one_time_code_repository import model_repository
 
@@ -17,8 +18,10 @@ async def start_cmd(message: Message):
                          f"Для использования бота: /menu")
 
 
-@router.message(Command("menu"))
+@router.message(Command("menu"), )
 async def menu(message: Message):
+    if not await model_repository.check_pattern(message.from_user.id, redis_session):
+        await model_repository.set(message.from_user.id, "animagineXL_Euler", redis_session)
     model, sampler = (await model_repository.get_code(message.from_user.id, redis_session)).split("_")
     await message.answer(
         text=f"Меню бота\n"
