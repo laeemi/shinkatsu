@@ -16,8 +16,9 @@ router.message.filter(GenFilter())
 async def start_cmd(message: Message):
     if not await model_repository.check_pattern(message.from_user.id, redis_session):
         await model_repository.set(message.from_user.id, "animagineXL_Euler", redis_session)
-    await message.answer(f"Привет, {message.from_user.username} \n"
-                         f"Для использования бота: /menu")
+    await message.answer(f"👋Привет, {message.from_user.username} \n"
+                         f"📋Меню бота: /menu\n"
+                         f"📢Для работы обязателен API KEY❗")
 
 
 @router.message(Command("menu"), )
