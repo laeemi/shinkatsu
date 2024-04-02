@@ -13,10 +13,21 @@ class OneTimeCodeRepository:
     def _get_key(self, user_id: str, code: str) -> str:
         return f"{self.key_prefix}:{user_id}:{code}"
 
-    async def delete(self, code: str, session: aioredis.Redis):
+    async def delete_code(self, code: str, session: aioredis.Redis):
         pattern = self._get_key("*", code)
         keys = await session.keys(pattern)
         await session.delete(*keys)
+        await session.close()
+
+    async def delete_user(self, user_id: str, session: aioredis.Redis):
+        pattern = self._get_key(user_id, "*")
+        keys = await session.keys(pattern)
+        await session.delete(*keys)
+        await session.close()
+
+    async def delete(self, user_id: str, code: str, session: aioredis.Redis):
+        key = self._get_key(user_id, code)
+        await session.delete(key)
         await session.close()
 
     async def get_user_id(self, code: str, session: aioredis.Redis) -> Optional[int]:
@@ -35,7 +46,7 @@ class OneTimeCodeRepository:
 
     async def set(self, user_id: str, code: str, session: aioredis.Redis):
         key: str = self._get_key(user_id, code)
-        await session.set(key, value=1)
+        await session.set(key, value=1, ex=self.period)
         await session.close()
 
     async def check(self, user_id: str, code: str, session: aioredis.Redis) -> bool:

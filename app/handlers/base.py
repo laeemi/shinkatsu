@@ -19,8 +19,11 @@ async def start_cmd(message: Message):
 
 @router.message(Command("menu"))
 async def menu(message: Message):
+    model, sampler = (await model_repository.get_code(message.from_user.id, redis_session)).split("_")
     await message.answer(
-        text="Меню бота",
+        text=f"Меню бота\n"
+             f"Выбранная модель: {model}\n"
+             f"Выбранный семплер: {sampler}\n",
         reply_markup=get_menu_kb()
     )
 

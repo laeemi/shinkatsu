@@ -4,13 +4,15 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, BufferedInputFile
 
 from app.callbacks.menu import MenuCallback
+from app.callbacks.models_samplers import ModelsSamplersCallback
 from app.core.redis import redis_session
 from app.filters.auth_filter import AuthFilter
+from app.filters.timeout_filter import TimeoutFilter
 from app.keyboards.menu import get_api_key_kb
 from app.keyboards.models import get_models_kb
 from app.keyboards.samplers import get_samplers_kb
 from app.services.image_generator import get_image
-from app.services.one_time_code_repository import api_key_repository
+from app.services.one_time_code_repository import api_key_repository, model_repository
 
 router = Router()
 
@@ -18,6 +20,11 @@ router = Router()
 class ImageGen(StatesGroup):
     input_prompt = State()
     input_api_key = State()
+
+
+@router.callback_query(TimeoutFilter())
+async def timeout(message: Message):
+    await message.answer(text=f"🕒Время ожидания: 5 минут")
 
 
 @router.callback_query(MenuCallback.filter(F.choice == "api_key"), AuthFilter())
@@ -32,7 +39,8 @@ async def change_api_key(callback: CallbackQuery):
 @router.callback_query(MenuCallback.filter(F.choice == "api_key"))
 async def input_api_key(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(
-        text="Введите api_key: "
+        text="Получить API KEY - @VisionCraft_bot\n"
+             "Введите api key: "
     )
     await state.set_state(ImageGen.input_api_key)
 
@@ -64,7 +72,7 @@ async def send_image(message: Message, state: FSMContext):
     #     await message.answer(text="Введен некорректный prompt\n"
     #                               "Попробуйте ещё")
     #     return gen_image
-    file = BufferedInputFile(file=await get_image(message.from_user.id, message.text),filename="generated_image.png")
+    file = BufferedInputFile(file=await get_image(message.from_user.id, message.text), filename="generated_image.png")
     await message.answer_photo(
         photo=file
     )
@@ -74,14 +82,34 @@ async def send_image(message: Message, state: FSMContext):
 @router.callback_query(MenuCallback.filter(F.choice == "models"), AuthFilter())
 async def select_model(callback: CallbackQuery):
     await callback.message.answer(
-        text="Выберите модель",
+        text=f"Список моделей",
         reply_markup=await get_models_kb()
     )
 
 
+@router.callback_query(ModelsSamplersCallback.filter(F.action == "model_selected"))
+async def change_model(callback: CallbackQuery, callback_data: ModelsSamplersCallback):
+    model = callback_data.choice
+    user_id = callback.from_user.id
+    sampler = (await model_repository.get_code(user_id, redis_session)).split("_")[1]
+    await model_repository.delete_user(user_id, redis_session)
+    await model_repository.set(user_id, f"{model}_{sampler}", redis_session)
+    await callback.answer("Модель изменена!")
+
+
 @router.callback_query(MenuCallback.filter(F.choice == "samplers"), AuthFilter())
-async def select_model(callback: CallbackQuery):
+async def select_sampler(callback: CallbackQuery):
     await callback.message.answer(
-        text="Выберите семплер",
+        text="Список семплеров",
         reply_markup=await get_samplers_kb()
     )
+
+
+@router.callback_query(ModelsSamplersCallback.filter(F.action == "sampler_selected"))
+async def change_sampler(callback: CallbackQuery, callback_data: ModelsSamplersCallback):
+    sampler = callback_data.choice
+    user_id = callback.from_user.id
+    model = (await model_repository.get_code(user_id, redis_session)).split("_")[0]
+    await model_repository.delete_user(user_id, redis_session)
+    await model_repository.set(user_id, f"{model}_{sampler}", redis_session)
+    await callback.answer("Семплер изменен!")

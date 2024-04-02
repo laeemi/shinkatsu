@@ -1,7 +1,7 @@
 import aiohttp
 
 from app.core.redis import redis_session
-from app.services.one_time_code_repository import model_repository, api_key_repository
+from app.services.one_time_code_repository import model_repository, api_key_repository, timeout_repository
 
 
 async def generate_image(api_url, data):
@@ -35,4 +35,6 @@ async def get_image(user_id: int, prompt: str):
     }
 
     # Generate images asynchronously
-    return await generate_image(api_url, data)
+    image = await generate_image(api_url, data)
+    await timeout_repository.set(user_id, "timeout", redis_session)
+    return image
