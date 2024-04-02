@@ -1,0 +1,10 @@
+.idea
+.vscode
+.gitignore
+.dockerignore
+docker-compose.yml
+Dockerfile
+*.env
+test
+venv
+
