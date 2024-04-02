@@ -1,10 +1,7 @@
 from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Update
-
-from app.core.redis import redis_session
-from app.handlers.menu import ImageGen
-from app.services.one_time_code_repository import api_key_repository
+from app.states.image_gen import ImageGen
 
 
 class GenFilter(BaseFilter):

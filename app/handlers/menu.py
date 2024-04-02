@@ -1,27 +1,24 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, BufferedInputFile, \
-    InputMediaPhoto
+from aiogram.types import CallbackQuery, Message, BufferedInputFile
 
 from app.callbacks.menu import MenuCallback
 from app.callbacks.models_samplers import ModelsSamplersCallback
 from app.core.redis import redis_session
 from app.filters.auth_filter import AuthFilter
+from app.filters.generation_process_filter import GenFilter
 from app.filters.timeout_filter import TimeoutFilter
 from app.keyboards.menu import get_api_key_kb
 from app.keyboards.models import get_models_kb
 from app.keyboards.samplers import get_samplers_kb
 from app.services.image_generator import get_image
 from app.services.one_time_code_repository import api_key_repository, model_repository
+from app.states.image_gen import ImageGen
 
 router = Router()
+router.callback_query.filter(GenFilter())
+router.message.filter(GenFilter())
 
-
-class ImageGen(StatesGroup):
-    input_prompt = State()
-    generating_image = State()
-    input_api_key = State()
 
 
 @router.callback_query(TimeoutFilter())
@@ -74,12 +71,12 @@ async def send_image(message: Message, state: FSMContext):
     #     await message.answer(text="Введен некорректный prompt\n"
     #                               "Попробуйте ещё")
     #     return gen_image
-    await message.answer(text="⏳Ожидайте ... ", reply_to_message_id=message.message_id)
     await state.set_state(ImageGen.generating_image)
+    mess = await message.answer(text="⏳Ожидайте ... ", reply_to_message_id=message.message_id)
     try:
         file = BufferedInputFile(file=await get_image(message.from_user.id, message.text),
                                  filename="generated_image.png")
-        await message.edit_text(text="✅")
+        await mess.delete()
         await message.answer_photo(
             photo=file
         )

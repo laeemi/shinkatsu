@@ -3,11 +3,13 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from app.core.redis import redis_session
-from app.filters.auth_filter import AuthFilter
+from app.filters.generation_process_filter import GenFilter
 from app.keyboards.menu import get_menu_kb
 from app.services.one_time_code_repository import model_repository
 
 router = Router()
+router.callback_query.filter(GenFilter())
+router.message.filter(GenFilter())
 
 
 @router.message(Command("start"))
