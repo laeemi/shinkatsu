@@ -5,10 +5,17 @@ from app.callbacks.menu import MenuCallback
 
 def get_menu_kb() -> InlineKeyboardMarkup:
     buttons = [
-            [InlineKeyboardButton(text="Генерация изображений", callback_data=MenuCallback(foo="gen").pack())],
-            [InlineKeyboardButton(text="Доступные Модели", callback_data=MenuCallback(foo="models").pack())],
-            [InlineKeyboardButton(text="Доступные Loras", callback_data=MenuCallback(foo="loras").pack())],
-            [InlineKeyboardButton(text="Доступные Семплеры", callback_data=MenuCallback(foo="samplers").pack())],
+        [InlineKeyboardButton(text="API KEY", callback_data=MenuCallback(choice="api_key").pack())],
+        [InlineKeyboardButton(text="Генерация изображений", callback_data=MenuCallback(choice="gen").pack())],
+        [InlineKeyboardButton(text="Выбрать Модель", callback_data=MenuCallback(choice="models").pack())],
+        [InlineKeyboardButton(text="Выбрать Семплер", callback_data=MenuCallback(choice="samplers").pack())],
     ]
 
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_api_key_kb() -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text="Изменить", callback_data=MenuCallback(choice="api_key").pack())]
+    ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

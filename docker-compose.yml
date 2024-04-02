@@ -6,7 +6,7 @@ version: "3"
 # Эти сервисы будут частью нашего приложения
 services:
 
-  app: # Имя сервиса
+  tg_bot: # Имя сервиса
     build:
       # Контекст для сборки образа,
       # в данном случае, текущая директория
@@ -14,6 +14,19 @@ services:
       # Имя Docker-файла из которого будет собран образ
       dockerfile: Dockerfile
       # Команда, которая будет выполнена после старта сервиса
+    env_file:
+      - .env
     environment:
       - TOKEN=${TOKEN}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
     command: python run.py
+    restart: always
+
+  redis:
+    image: 'bitnami/redis:6.2.13'
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
