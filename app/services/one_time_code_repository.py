@@ -42,7 +42,10 @@ class OneTimeCodeRepository:
         pattern = f"{self.key_prefix}:{user_id}:*"
         keys = await session.keys(pattern)
         await session.close()
-        return str(keys[0].split(":")[2])
+        try:
+            return str(keys[0].split(":")[2])
+        except IndexError:
+            return None
 
     async def set(self, user_id: str, code: str, session: aioredis.Redis):
         key: str = self._get_key(user_id, code)
@@ -63,5 +66,6 @@ class OneTimeCodeRepository:
 
 
 api_key_repository = OneTimeCodeRepository(key_prefix="api_key")
+negative_prompt_repository = OneTimeCodeRepository(key_prefix="n_prompt")
 model_repository = OneTimeCodeRepository(key_prefix="model")
 timeout_repository = OneTimeCodeRepository(key_prefix="timeout", period=timedelta(minutes=5))

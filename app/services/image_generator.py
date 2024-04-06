@@ -1,7 +1,8 @@
 import aiohttp
 
 from app.core.redis import redis_session
-from app.services.one_time_code_repository import model_repository, api_key_repository, timeout_repository
+from app.services.one_time_code_repository import model_repository, api_key_repository, timeout_repository, \
+    negative_prompt_repository
 
 
 async def generate_image(api_url, data):
@@ -15,6 +16,7 @@ async def get_image(user_id: int, prompt: str):
     api_url = "https://visioncraft.top"
     api_key = await api_key_repository.get_code(user_id, redis_session)
     model_sampler = await model_repository.get_code(user_id, redis_session)
+    n_prompt = await negative_prompt_repository.get_code(user_id, redis_session)
 
     model, sampler = model_sampler.split("_")
     width = 1024
@@ -25,7 +27,7 @@ async def get_image(user_id: int, prompt: str):
     data = {
         "prompt": prompt,
         "model": model,
-        "negative_prompt": "bad quality",
+        "negative_prompt": n_prompt if n_prompt is not None else 'bad quality',
         "token": api_key,
         "width": width,
         "height": height,

@@ -34,6 +34,15 @@ async def menu(message: Message):
     )
 
 
+@router.message(Command("help"))
+async def about(message: Message):
+    await message.answer("1) Для использования бота необходимо: \n"
+                         " - Настроить API KEY в /menu - API KEY\n"
+                         " - Для получения API KEY перейдите в @VisionCraft_bot и выполните необходимые условия\n"
+                         "2) Чтобы настроить бота перейдите в /menu - Настройки"
+                         )
+
+
 @router.message(Command("about"))
 async def about(message: Message):
     await message.answer("Бот для генерации изображений с помощью Stable Diffusion XL \n"

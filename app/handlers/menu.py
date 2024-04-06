@@ -3,22 +3,19 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, BufferedInputFile
 
 from app.callbacks.menu import MenuCallback
-from app.callbacks.models_samplers import ModelsSamplersCallback
 from app.core.redis import redis_session
 from app.filters.auth_filter import AuthFilter
 from app.filters.generation_process_filter import GenFilter
 from app.filters.timeout_filter import TimeoutFilter
 from app.keyboards.menu import get_api_key_kb
-from app.keyboards.models import get_models_kb
-from app.keyboards.samplers import get_samplers_kb
+from app.keyboards.settings import get_prompt_cancel_kb
 from app.services.image_generator import get_image
-from app.services.one_time_code_repository import api_key_repository, model_repository
+from app.services.one_time_code_repository import api_key_repository
 from app.states.image_gen import ImageGen
 
 router = Router()
 router.callback_query.filter(GenFilter())
 router.message.filter(GenFilter())
-
 
 
 @router.callback_query(TimeoutFilter())
@@ -60,9 +57,17 @@ async def save_api_key(message: Message, state: FSMContext):
 @router.callback_query(MenuCallback.filter(F.choice == "gen"), AuthFilter())
 async def gen_image(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(
-        text="Введите prompt: "
+        text="Введите Prompt (на английском): ",
+        reply_markup=get_prompt_cancel_kb()
     )
     await state.set_state(ImageGen.input_prompt)
+
+
+@router.callback_query(ImageGen.input_prompt, MenuCallback.filter(F.choice == "prompt_cancel"), AuthFilter())
+async def prompt_input_cancel(callback: CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await callback.answer()
+    await state.clear()
 
 
 @router.message(ImageGen.input_prompt, AuthFilter())
@@ -84,6 +89,3 @@ async def send_image(message: Message, state: FSMContext):
     except:
         await message.answer(text="❌Упс... что-то пошло не так❌")
         await state.clear()
-
-
-
