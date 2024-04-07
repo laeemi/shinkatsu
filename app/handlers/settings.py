@@ -9,10 +9,11 @@ from app.core.redis import redis_session
 from app.filters.auth_filter import AuthFilter
 from app.filters.generation_process_filter import GenFilter
 from app.handlers.base import menu
-from app.keyboards.settings import get_settings_kb, get_negative_prompt_kb, get_negative_prompt_cancel_kb
+from app.keyboards.settings import get_settings_kb, get_negative_prompt_kb, get_negative_prompt_cancel_kb, \
+    get_num_of_imgs_kb
 from app.keyboards.models import get_models_kb
 from app.keyboards.samplers import get_samplers_kb
-from app.services.one_time_code_repository import model_repository, negative_prompt_repository
+from app.services.one_time_code_repository import model_repository, negative_prompt_repository, images_count_repository
 from app.states.change_settings import ChangeSettings
 
 router = Router()
@@ -53,7 +54,7 @@ async def show_negative_prompt(callback: CallbackQuery):
 
 @router.callback_query(SettingsCallback.filter(F.choice == "change_n_prompt"))
 async def negative_prompt_change(callback: CallbackQuery, state: FSMContext):
-    mess = await callback.message.edit_text(
+    await callback.message.edit_text(
         text="Введите Негативный Prompt: ",
         reply_markup=get_negative_prompt_cancel_kb()
     )
@@ -74,6 +75,28 @@ async def negative_prompt_back(callback: CallbackQuery):
 async def negative_prompt_back(callback: CallbackQuery):
     await callback.message.delete()
     return await menu(callback.message)
+
+
+@router.callback_query(SettingsCallback.filter(F.choice == "imgs_count"))
+async def images_count(callback: CallbackQuery):
+    num = await images_count_repository.get_code(callback.from_user.id, redis_session)
+    await callback.message.edit_text(
+        text=f"Выбранное число изображений - {num if num is not None else '3'}",
+        reply_markup=get_num_of_imgs_kb()
+    )
+
+
+@router.callback_query(SettingsCallback.filter(F.choice == "num_of_imgs_back"))
+async def images_count_back(callback: CallbackQuery):
+    return await ai_settings(callback)
+
+
+@router.callback_query(SettingsCallback.filter(F.choice == "change_count"))
+async def change_images_count(callback: CallbackQuery, callback_data: SettingsCallback):
+    await images_count_repository.set(callback.from_user.id, callback_data.count, redis_session)
+    await callback.message.answer(
+        text="Количество изображений сменено!"
+    )
 
 
 @router.callback_query(SettingsCallback.filter(F.choice == "models"))

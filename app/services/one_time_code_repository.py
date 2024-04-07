@@ -67,5 +67,6 @@ class OneTimeCodeRepository:
 
 api_key_repository = OneTimeCodeRepository(key_prefix="api_key")
 negative_prompt_repository = OneTimeCodeRepository(key_prefix="n_prompt")
+images_count_repository = OneTimeCodeRepository(key_prefix="imgs_count")
 model_repository = OneTimeCodeRepository(key_prefix="model")
 timeout_repository = OneTimeCodeRepository(key_prefix="timeout", period=timedelta(minutes=5))

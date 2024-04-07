@@ -1,8 +1,12 @@
+import logging
+import traceback
+
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, BufferedInputFile
+from aiogram.types import CallbackQuery, Message, BufferedInputFile, InputMediaPhoto
 
 from app.callbacks.menu import MenuCallback
+from app.callbacks.settings import SettingsCallback
 from app.core.redis import redis_session
 from app.filters.auth_filter import AuthFilter
 from app.filters.generation_process_filter import GenFilter
@@ -63,7 +67,7 @@ async def gen_image(callback: CallbackQuery, state: FSMContext):
     await state.set_state(ImageGen.input_prompt)
 
 
-@router.callback_query(ImageGen.input_prompt, MenuCallback.filter(F.choice == "prompt_cancel"), AuthFilter())
+@router.callback_query(ImageGen.input_prompt, SettingsCallback.filter(F.choice == "prompt_cancel"), AuthFilter())
 async def prompt_input_cancel(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await callback.answer()
@@ -79,13 +83,16 @@ async def send_image(message: Message, state: FSMContext):
     await state.set_state(ImageGen.generating_image)
     mess = await message.answer(text="⏳Ожидайте ... ", reply_to_message_id=message.message_id)
     try:
-        file = BufferedInputFile(file=await get_image(message.from_user.id, message.text),
-                                 filename="generated_image.png")
+        images = await get_image(message.from_user.id, message.text)
+        media = [InputMediaPhoto(
+            media=BufferedInputFile(file=image, filename="generated_image.png")
+        ) for image in images]
         await mess.delete()
-        await message.answer_photo(
-            photo=file
+        await message.answer_media_group(
+            media=media
         )
         await state.clear()
     except:
+        logging.info(f"ERROR TRACEBACK: {traceback.format_exc()}")
         await message.answer(text="❌Упс... что-то пошло не так❌")
         await state.clear()
