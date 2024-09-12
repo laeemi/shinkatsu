@@ -1,2 +1,2 @@
-# Stable Diffusion XL bot
-### Бот для генерации изображений
+# Shinkatsu
+### Telegram-bot for image generation (using OxygenAPI)
